@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/resources">
+        <file>translations/lorentz_ru.qm</file>
+        <file>app.png</file>
+        <file>app32.png</file>
+    </qresource>
+</RCC>
