@@ -2,24 +2,27 @@
 #include "window.h"
 #include "widget.h"
 #include "model.h"
+#include <iostream>
+using namespace std;
 
 static const int w = 400;
 static const int h = 400;
 
-Widget::Widget(Model *model, QWidget *parent)
-	: QWidget(parent), model(model)
+Widget::Widget(QWidget *parent)
+    : QWidget(parent)
 {
 	showTrace = false;
 	elapsed = 0;
 	setFixedSize(w, h);
-	model->setDim(w, h);
+
 	vecBegin = QPoint(-1, -1);
 	vecBrush = QBrush(Qt::green);
 }
 
 void Widget::animate()
 {
-	model->step(refresh_rate);
+    for (int i = 0; i < models.size(); i++)
+        models[i]->step(refresh_rate);
 	repaint();
 }
 
@@ -31,10 +34,10 @@ void Widget::setTrace(bool set)
 
 void Widget::paintEvent(QPaintEvent *event)
 {
-	painter.begin(this);
+    painter.begin(this);
 	painter.setRenderHint(QPainter::Antialiasing);
 
-	model->paint(&painter, event);
+    models[current_model]->paint(&painter, event);
 	if (vecBegin.x() >= 0) {
 		painter.setBrush(vecBrush);
 		painter.drawLine(vecBegin, vecEnd);
@@ -45,15 +48,15 @@ void Widget::paintEvent(QPaintEvent *event)
 		int step = refresh_rate;
 		int length = trace_length/refresh_rate;
 
-		model->save();
-		model->setPaintTraceOnly(true);
+        models[current_model]->save();
+        models[current_model]->setPaintTraceOnly(true);
 		for (int i = 1; i <= length; i++) {
 			sum += step;
-			model->step(step);
-			model->paint(&painter, event);
+            models[current_model]->step(step);
+            models[current_model]->paint(&painter, event);
 		}
-		model->setPaintTraceOnly(false);
-		model->load();
+        models[current_model]->setPaintTraceOnly(false);
+        models[current_model]->load();
 	}
 
 	painter.end();
@@ -85,10 +88,10 @@ void Widget::mouseReleaseEvent(QMouseEvent *event)
 			angle = (2*M_PI / 360) * (rand() % 360);
 		else
 			angle = (2*M_PI / 360) * (defDir - 90);
-	model->add(vecBegin.x(), vecBegin.y(), angle);
+    models[current_model]->add(vecBegin.x(), vecBegin.y(), angle);
 	vecBegin = QPoint(-1, -1);
 	repaint();
-	numberChanged(model->getNumber());
+    numberChanged(models[current_model]->getNumber());
 }
 
 QImage Widget::getImage()
@@ -98,51 +101,77 @@ QImage Widget::getImage()
 	return pixmap.toImage();
 }
 
+void Widget::addModel() {
+    Model *model;
+    if (models.size() > 0)
+        model = new Model(*models.back());
+    else {
+        model = new Model();
+        model->setDim(w, h);
+    }
+    models.push_back(model);
+}
+
+void Widget::removeModel() {
+    delete models.back();
+    models.pop_back();
+}
+
+void Widget::setEnsembleSize(int size)
+{
+    while (size > models.size())
+        addModel();
+    while (size < models.size())
+        removeModel();
+}
+
+void Widget::setCurrentModel(int idx)
+{
+    current_model = idx;
+}
+
+Model* Widget::getCurrentModel()
+{
+    return models[current_model];
+}
+
+Model* Widget::getModel(int idx)
+{
+    return models[idx];
+}
+
 void Widget::setNumber(int num)
 {
-	model->setNumber(num);
+    for (int i = 0; i < models.size(); i++)
+        models[i]->setNumber(num);
 	repaint();
 }
 
 void Widget::setSide(int val)
 {
-	model->setSide(val);
+    for (int i = 0; i < models.size(); i++)
+        models[i]->setSide(val);
 	repaint();
 }
 
 void Widget::setAtomR(double val)
 {
-	model->setAtomR((qreal)val);
+    for (int i = 0; i < models.size(); i++)
+        models[i]->setAtomR((qreal)val);
 	repaint();
 }
 
 void Widget::setElectronR(double val)
 {
-	model->setElectronR((qreal)val);
+    for (int i = 0; i < models.size(); i++)
+        models[i]->setElectronR((qreal)val);
 	repaint();
 }
 
 void Widget::setSpeed(double val)
 {
-	model->setSpeed(val);
-	repaint();
-}
-
-void Widget::setShowBins(bool val)
-{
-	model->setShowBins(val);
-	repaint();
-}
-
-void Widget::setBinsNumber(int val)
-{
-	model->setBinsNumber(val);
-	repaint();
-}
-
-void Widget::setBinIndex(int val)
-{
-	model->setBinIndex(val-1);
+    for (int i = 0; i < models.size(); i++)
+        models[i]->setSpeed(val);
 	repaint();
 }
 
@@ -158,5 +187,12 @@ void Widget::setDefaultRandom(bool isRandom)
 
 void Widget::clear()
 {
-	model->clear();
+    for (int i = 0; i < models.size(); i++)
+        models[i]->clear();
+}
+
+
+
+Widget::~Widget() {
+
 }

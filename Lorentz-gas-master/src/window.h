@@ -35,8 +35,7 @@ protected slots:
 	void saveShot();
 	void togglePlay();
 	void clearSettings();
-	void updateTogglePlayButton();
-	void updateBinsNumber(int);
+    void updateTogglePlayButton();
     void setCurrentEnsembleElement(double);
     void setEnsembleSize(double);
 	void trailMode(bool active);
@@ -46,13 +45,10 @@ private:
 	Ui::Window *ui;
 
     int n_electrons;
-    int ensemble_size;
-    int current_ensemble_element;
-    QVector<Model> model;
 
-	QTimer *timer;
-    QVector<Widget*> natives;
-	QCustomPlot* plot;
+    QTimer *timer = NULL;
+    Widget* native = NULL;
+    QCustomPlot* plot = NULL;
 
 	AboutDialog *aboutDialog;
 

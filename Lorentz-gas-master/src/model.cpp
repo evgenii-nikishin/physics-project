@@ -5,8 +5,10 @@
 #include <stdlib.h>
 #include <math.h>
 #include <assert.h>
+#include <iostream>
+using namespace std;
 
-const int Model::MAX_HISTORY = 100000;
+const int Model::MAX_HISTORY = 10000000;
 const qreal Model::timeStep = 1.0;
 const qreal Model::measurePeriod = 20.0;
 
@@ -20,8 +22,7 @@ Model::Model()
 	electronR = 2;
 	speed = 100;
 
-	num = 0;
-	bin = 0;
+    num = 0;
 
 	paintTraceOnly = false;
 
@@ -39,6 +40,36 @@ Model::Model()
 	clear();
 }
 
+
+Model::Model(const Model& copied)
+{
+    // default parameters
+    side = copied.side;
+    atomR = copied.atomR;
+    electronR = copied.electronR;
+    speed = copied.speed;
+
+    num = 0;
+
+    paintTraceOnly = false;
+
+    background = copied.background;
+    traceBrush = copied.traceBrush;
+    atomBrush = copied.atomBrush;
+    electronBrush = copied.electronBrush;
+    binBrush = copied.binBrush;
+
+    width = copied.width;
+    height = copied.height;
+
+    xBegin = copied.xBegin;
+    yBegin = copied.yBegin;
+
+    clear();
+    setNumber(copied.num);
+}
+
+
 void Model::add(int x, int y, qreal angle)
 {
 	positions.append(QPointF(x, y));
@@ -48,13 +79,9 @@ void Model::add(int x, int y, qreal angle)
 
 void Model::clear()
 {
-	time.clear();
-	prob.clear();
-	impulses.clear();
-	density = QVector<qreal>(nbins, 0);
-	timeInsideAll = QVector<qreal>(nbins, 0);
-	timeFull = 0;
-	timeInside = 0;
+    time.clear();
+    impulses.clear();
+    timeFull = 0;
 	impulseSum = 0;
 }
 
@@ -68,19 +95,9 @@ QVector<qreal> Model::getTime() const
 	return time;
 }
 
-QVector<qreal> Model::getProb() const
-{
-	return prob;
-}
-
 QVector<qreal> Model::getImpulses() const
 {
 	return impulses;
-}
-
-QVector<qreal> Model::getDensity() const
-{
-	return density;
 }
 
 void Model::setNumber(int newNum)
@@ -140,24 +157,6 @@ void Model::setSpeed(qreal val)
 	speed = val;
 }
 
-void Model::setShowBins(bool val)
-{
-	showBins = val;
-}
-
-void Model::setBinsNumber(int num)
-{
-	nbins = num;
-	binwidth = (qreal)width / nbins;
-	density = QVector<qreal>(nbins, 0);
-	timeInsideAll = QVector<qreal>(nbins, 0);
-}
-
-void Model::setBinIndex(int idx)
-{
-	bin = idx;
-}
-
 void Model::setDim(int w, int h)
 {
 	width = w;
@@ -198,8 +197,10 @@ void Model::checkBorders(QPointF& p, qreal& phi)
 		phi = 3 * M_PI - phi;
 		addImpulse += -x;
 	}
-	if (!paintTraceOnly)
-		impulseSum += addImpulse;
+
+    if (!paintTraceOnly) {
+        impulseSum += addImpulse;
+    }
 }
 
 void Model::checkAtom(QPointF& p, qreal& phi, QPointF pOld)
@@ -269,7 +270,7 @@ void Model::checkAtom(QPointF& p, qreal& phi, QPointF pOld)
 
 void Model::paint(QPainter *painter, QPaintEvent *event)
 {
-	if (paintTraceOnly) {
+    if (paintTraceOnly) {
 		painter->save();
 		painter->setBrush(traceBrush);
 		for (int i = 0; i < num; i++) {
@@ -283,16 +284,7 @@ void Model::paint(QPainter *painter, QPaintEvent *event)
 		QRect rect = event->rect();
 		painter->fillRect(rect, background);
 
-		painter->save();
-
-		if (showBins) {
-			painter->setBrush(binBrush);
-			for (int i = 1; i < nbins; i++) {
-				qreal y = binwidth*i;
-				painter->drawLine(QPointF(y, 0), QPointF(y, (qreal)height));
-			}
-			painter->fillRect(QRectF(binwidth*bin, 0, binwidth, (qreal)height), binBrush);
-		}
+        painter->save();
 
 		painter->setBrush(atomBrush);
 		for (int i = yBegin; i < rect.height(); i += side) {
@@ -330,32 +322,19 @@ void Model::step(int elapsed)
 		checkBorders(newP, speedDir[i]);
 		checkAtom(newP, speedDir[i], curP);
 		positions[i] = newP;
-		if (!paintTraceOnly) {
-			if ((curP.x() >= bin*binwidth) && (curP.x() < (bin+1)*binwidth) &&
-				(newP.x() >= bin*binwidth) && (newP.x() < (bin+1)*binwidth))
-				timeInside += s/num;
-			for (int b = 0; b < nbins; ++b) {
-				if ((curP.x() >= b*binwidth) && (curP.x() < (b+1)*binwidth) &&
-					(newP.x() >= b*binwidth) && (newP.x() < (b+1)*binwidth))
-					timeInsideAll[b] += s/num;
-			}
-		}
-	}
-	if (!paintTraceOnly)
-		timeFull += s;
+    }
+    if (!paintTraceOnly)
+        timeFull += s;
+
+    if (time.size() >= MAX_HISTORY) {
+        time.pop_front();
+        impulses.pop_front();
+    }
 
 	if ((time.empty() || (time.back() + measurePeriod <= timeFull)) && time.size() < MAX_HISTORY) {
-		time.push_back(timeFull/100.0);
-		prob.push_back(timeInside/timeFull);
-		impulses.push_back(impulseSum);
-		qreal psum = 0;
-		for (int b = 0; b < nbins; ++b) {
-			density[b] = timeInsideAll[b] / timeFull;
-			psum += density[b];
-		}
-		for (int b = 0; b < nbins; ++b)
-			density[b] /= psum;
-	}
+        time.push_back(timeFull/100.0);
+        impulses.push_back(impulseSum);
+    }
 }
 
 
@@ -371,4 +350,6 @@ void Model::load()
 	speedDir = speedDir_save;
 }
 
+Model::~Model() {
 
+}

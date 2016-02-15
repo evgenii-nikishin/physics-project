@@ -13,8 +13,9 @@ class Widget : public QWidget
 	Q_OBJECT
 
 public:
-	Widget(Model *model, QWidget *parent);
+    Widget(QWidget *parent);
 	QImage getImage();
+    virtual ~Widget();
 
 public slots:
 	void animate();
@@ -22,12 +23,19 @@ public slots:
 	void setSide(int);
 	void setSpeed(double);
 	void setAtomR(double);
-	void setElectronR(double);
-	void setShowBins(bool);
-	void setBinsNumber(int);
-	void setBinIndex(int);
+    void setElectronR(double);
 	void setDefaultDirection(double);
-	void setDefaultRandom(bool);
+
+    void addModel();
+    void removeModel();
+    void setEnsembleSize(int);
+
+
+    void setCurrentModel(int idx);
+    Model* getCurrentModel();
+    Model* getModel(int idx);
+
+    void setDefaultRandom(bool);
 	void setTrace(bool);
 	void clear();
 
@@ -40,10 +48,13 @@ protected:
 	void mouseMoveEvent(QMouseEvent *event);
 	void mouseReleaseEvent(QMouseEvent *event);
 
+public:
+    QVector<Model*> models;
+
 private:
-	QPainter painter;
-	Model *model;
+    QPainter painter;
 	int elapsed;
+    int current_model;
 
 	QPoint vecBegin, vecEnd;
 	QBrush vecBrush;

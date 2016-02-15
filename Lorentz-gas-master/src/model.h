@@ -10,7 +10,10 @@
 class Model
 {
 public:
-	Model();
+    Model();
+    Model(const Model&);
+
+    ~Model();
 
 public:
 	void step(int elapsed);
@@ -21,10 +24,8 @@ public:
 	void setDim(int w, int h);
 
 	int getNumber() const;
-	QVector<qreal> getTime() const;
-	QVector<qreal> getProb() const;
-	QVector<qreal> getImpulses() const;
-	QVector<qreal> getDensity() const;
+    QVector<qreal> getTime() const;
+    QVector<qreal> getImpulses() const;
 	int getWidth() const { return width; }
 	int getHeight() const { return height; }
 
@@ -46,7 +47,7 @@ public:
 	static const qreal measurePeriod;
 	static const int MAX_HISTORY;
 
-private:
+public:
 	void checkBorders(QPointF& p, qreal& phi);
 	void checkAtom(QPointF& p, qreal& phi, QPointF pOld);
 
@@ -74,17 +75,10 @@ private:
 	QVector<qreal> speedDir_save;
 	QVector<QPointF> positions_save;
 
-	bool paintTraceOnly;
+    bool paintTraceOnly;
 
-	bool showBins;
-	int nbins, bin;
-	qreal binwidth;
-
-	qreal timeFull, timeInside, impulseSum;
-	QVector<qreal> timeInsideAll;
-	QVector<qreal> time;		// values of time
-	QVector<qreal> prob;		// magnitude of the bin
-	QVector<qreal> density;		// density of the electrons
+    qreal timeFull, impulseSum;
+    QVector<qreal> time;		// values of time
 	QVector<qreal> impulses;	// overall sum of collision impulses
 };
 
